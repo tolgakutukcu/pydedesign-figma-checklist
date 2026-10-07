@@ -314,7 +314,7 @@
   </div>
 
 <script>
-const VERSION = '1.4.0';
+const VERSION = '1.5.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/tolgakutukcu/pydedesign-figma-checklist/main/version.json';
 
 // `id` is what gets stored in the file, so item text can be edited freely.
@@ -352,7 +352,7 @@ const STRINGS = {
   en: {
     reset: 'Reset', completed: 'Completed', settings: 'Settings', back: 'Back', language: 'Language', version: 'Version',
     emptyTitle: 'Select a frame or section',
-    emptyText: 'The checklist is kept separately for each root frame, section, or frame inside a section. Selecting any element inside one works too.',
+    emptyText: 'The checklist works on sections, root frames, and frames placed directly inside a section. Nested frames and layers are not supported — select the frame or section itself.',
     multiTitle: 'Select a single frame or section',
     multiText: (n) => n + ' different frames / sections are selected. The checklist shows one at a time.',
     inSection: (s) => 'in section “' + s + '”',
@@ -372,7 +372,7 @@ const STRINGS = {
   tr: {
     reset: 'Sıfırla', completed: 'Tamamlandı', settings: 'Ayarlar', back: 'Geri', language: 'Dil', version: 'Sürüm',
     emptyTitle: 'Bir frame veya section seç',
-    emptyText: 'Checklist; root frame, section ya da section içindeki bir frame için ayrı tutulur. İçindeki herhangi bir eleman seçili olsa da olur.',
+    emptyText: 'Checklist; section, root frame ve doğrudan bir section içindeki frame’lerde çalışır. İç içe frame’ler ve layer’lar desteklenmez — frame veya section’ın kendisini seç.',
     multiTitle: 'Tek bir frame veya section seç',
     multiText: (n) => n + ' farklı frame / section seçili. Checklist aynı anda sadece birini gösterir.',
     inSection: (s) => '“' + s + '” section’ında',
