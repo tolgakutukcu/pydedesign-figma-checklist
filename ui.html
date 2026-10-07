@@ -171,6 +171,36 @@
   }
   .update a.btn:hover { filter: brightness(1.08); }
   .update .how { margin-top: 10px; font-size: 11px; max-width: 250px; }
+
+  /* Gate shown while the version check runs, and when it can't complete */
+  .gate {
+    position: fixed; inset: 0; z-index: 9; display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px; padding: 32px; text-align: center;
+    background: var(--figma-color-bg);
+  }
+  body.checking .gate, body.check-failed .gate { display: flex; }
+  .gate h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+  .gate p { margin: 0; color: var(--figma-color-text-secondary); max-width: 250px; }
+  .gate .spinner {
+    width: 26px; height: 26px; border-radius: 50%; margin-bottom: 8px;
+    border: 3px solid var(--figma-color-bg-secondary); border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .gate .big {
+    display: none; width: 56px; height: 56px; border-radius: 16px; place-items: center; margin-bottom: 8px;
+    background: rgba(124, 92, 255, .14); color: var(--accent);
+  }
+  .gate .big svg { width: 28px; height: 28px; }
+  .gate .retry {
+    display: none; margin-top: 14px; padding: 9px 16px; border: 0; border-radius: 9px; cursor: pointer;
+    font: inherit; font-weight: 600; background: var(--accent); color: #fff;
+  }
+  .gate .retry:hover { filter: brightness(1.08); }
+  body.check-failed .gate .spinner { display: none; }
+  body.check-failed .gate .big { display: grid; }
+  body.check-failed .gate .retry { display: block; }
+  body.checking .gate .failed-only, body.check-failed .gate .checking-only { display: none; }
 </style>
 </head>
 <body class="empty loading">
@@ -235,6 +265,18 @@
     </div>
   </div>
 
+  <div class="gate">
+    <div class="spinner"></div>
+    <div class="big">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v5M12 16.5v.01M10.3 3.9L2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+    </div>
+    <h2 class="checking-only" data-i18n="chkTitle"></h2>
+    <p class="checking-only" data-i18n="chkText"></p>
+    <h2 class="failed-only" data-i18n="failTitle"></h2>
+    <p class="failed-only" data-i18n="failText"></p>
+    <button class="retry" id="retry" data-i18n="retry"></button>
+  </div>
+
   <div class="update">
     <div class="big">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
@@ -247,7 +289,7 @@
   </div>
 
 <script>
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/tolgakutukcu/pydedesign-figma-checklist/main/version.json';
 
 // `id` is what gets stored in the file, so item text can be edited freely.
@@ -296,7 +338,11 @@ const STRINGS = {
     updText: 'A newer version of this plugin is available. Please download it to keep using the checklist.',
     updDownload: 'Download from GitHub',
     updHow: 'Then in Figma: Plugins → Development → Import plugin from manifest… and pick the new manifest.json.',
-    installed: 'Installed', latest: 'Latest'
+    installed: 'Installed', latest: 'Latest',
+    chkTitle: 'Checking for updates…', chkText: 'Making sure you are on the latest version.',
+    failTitle: 'Can’t verify version',
+    failText: 'The plugin needs an internet connection to check for updates before it can be used. Check your connection and try again.',
+    retry: 'Try again'
   },
   tr: {
     reset: 'Sıfırla', completed: 'Tamamlandı', settings: 'Ayarlar', back: 'Geri', language: 'Dil', version: 'Sürüm',
@@ -312,7 +358,11 @@ const STRINGS = {
     updText: 'Bu plugin’in daha yeni bir sürümü var. Checklist’i kullanmaya devam etmek için lütfen indir.',
     updDownload: 'GitHub’dan indir',
     updHow: 'Sonra Figma’da: Plugins → Development → Import plugin from manifest… yolunu izleyip yeni manifest.json’ı seç.',
-    installed: 'Yüklü', latest: 'Son'
+    installed: 'Yüklü', latest: 'Son',
+    chkTitle: 'Güncelleme kontrol ediliyor…', chkText: 'En son sürümde olduğundan emin olunuyor.',
+    failTitle: 'Sürüm doğrulanamadı',
+    failText: 'Plugin’in kullanılabilmesi için güncelleme kontrolü gerekiyor ve bunun için internet bağlantısı lazım. Bağlantını kontrol edip tekrar dene.',
+    retry: 'Tekrar dene'
   }
 };
 
@@ -412,21 +462,32 @@ function isOlder(a, b) {
   return false;
 }
 
-// If GitHub can't be reached (offline etc.) the plugin keeps working normally.
+// The version check is mandatory: the plugin stays behind a gate until it succeeds.
+// If the check can't complete (offline, GitHub unreachable, bad response) the gate stays up with a retry button.
 async function checkVersion() {
+  const cl = document.body.classList;
+  cl.remove('check-failed', 'outdated');
+  cl.add('checking');
   try {
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const timer = setTimeout(() => ctrl.abort(), 8000);
     const res = await fetch(VERSION_URL + '?t=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' });
     clearTimeout(timer);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
     const latest = (await res.json()).version;
-    if (latest && isOlder(VERSION, latest)) {
+    if (typeof latest !== 'string' || !/^\d+\.\d+\.\d+$/.test(latest)) throw new Error('Bad version');
+    if (isOlder(VERSION, latest)) {
       latestVersion = latest;
       applyLang();
-      document.body.classList.add('outdated');
+      cl.add('outdated');
     }
-  } catch (e) {}
+    cl.remove('checking');
+  } catch (e) {
+    cl.remove('checking');
+    cl.add('check-failed');
+  }
 }
+$('retry').onclick = checkVersion;
 
 $('reset').onclick = () => { if (targetId) send({ type: 'reset', id: targetId }); };
 $('openSettings').onclick = () => document.body.classList.add('settings-open');

@@ -13,6 +13,8 @@ A Figma plugin with a handoff checklist stored per root frame / section. State i
 2. Bump `version` in `version.json` to the same number.
 3. Push to `main`. Anyone running an older version will see an "Update required" screen with a download link.
 
+The version check is mandatory: the plugin shows a blocking screen until it has verified the version on GitHub, and if it can't (offline, GitHub down) it stays blocked with a "Try again" button.
+
 Note: `version.json` must stay in the repo root on `main` and the repo must be public, because the plugin reads it from `raw.githubusercontent.com`.
 
 ## Editing checklist items
