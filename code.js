@@ -5,16 +5,13 @@ const KEY = 'checklist';
 
 figma.showUI(__html__, { width: 340, height: 560, themeColors: true });
 
-// Finds the node the checklist attaches to from a selection:
-// a section, or a root frame (a frame directly on the page or inside a section).
-// For inner elements it walks up to the owning frame / section.
+// The checklist only attaches to the node that is selected directly:
+// a section, or a root frame (a frame directly on the page or directly inside a section).
+// Nested frames and inner layers are not valid targets.
 function resolveTarget(node) {
-  while (node && node.type !== 'PAGE' && node.type !== 'DOCUMENT') {
-    if (node.type === 'SECTION') return node;
-    if (node.type === 'FRAME' && node.parent &&
-        (node.parent.type === 'PAGE' || node.parent.type === 'SECTION')) return node;
-    node = node.parent;
-  }
+  if (node.type === 'SECTION') return node;
+  if (node.type === 'FRAME' && node.parent &&
+      (node.parent.type === 'PAGE' || node.parent.type === 'SECTION')) return node;
   return null;
 }
 
