@@ -314,7 +314,7 @@
   </div>
 
 <script>
-const VERSION = '1.3.0';
+const VERSION = '1.4.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/tolgakutukcu/pydedesign-figma-checklist/main/version.json';
 
 // `id` is what gets stored in the file, so item text can be edited freely.
@@ -403,6 +403,7 @@ let lang = 'en';
 let targetId = null;
 let lastState = { status: 'none' };
 let latestVersion = null;
+let remoteVersion = null; // last version number read from GitHub (shown in Settings for troubleshooting)
 const t = () => STRINGS[lang];
 
 function send(m) { parent.postMessage({ pluginMessage: m }, '*'); }
@@ -472,7 +473,7 @@ function applyLang() {
   document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t()[el.dataset.i18nTitle]; });
   document.querySelectorAll('li').forEach((li) => { li.querySelector('.text').textContent = li._item[lang]; });
   document.querySelectorAll('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
-  $('sVer').textContent = t().version + ' ' + VERSION;
+  $('sVer').textContent = t().version + ' ' + VERSION + (remoteVersion ? '  ·  GitHub: v' + remoteVersion : '');
   if (latestVersion) $('versions').textContent = t().installed + ': v' + VERSION + '  ·  ' + t().latest + ': v' + latestVersion;
   render(lastState);
 }
@@ -489,10 +490,14 @@ function isOlder(a, b) {
 
 // The version check is mandatory: the plugin stays behind a gate until it succeeds.
 // If the check can't complete (offline, GitHub unreachable, bad response) the gate stays up with a retry button.
-async function checkVersion() {
+// A silent re-check (periodic, while the plugin stays open) only blocks when it positively finds a newer
+// version; a failed silent check is ignored so a brief network blip doesn't interrupt someone mid-work.
+async function checkVersion(silent) {
   const cl = document.body.classList;
-  cl.remove('check-failed', 'outdated');
-  cl.add('checking');
+  if (!silent) {
+    cl.remove('check-failed', 'outdated');
+    cl.add('checking');
+  }
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 8000);
@@ -501,18 +506,23 @@ async function checkVersion() {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const latest = (await res.json()).version;
     if (typeof latest !== 'string' || !/^\d+\.\d+\.\d+$/.test(latest)) throw new Error('Bad version');
+    remoteVersion = latest;
+    console.log('[Pyde checklist] installed v' + VERSION + ', GitHub v' + latest);
     if (isOlder(VERSION, latest)) {
       latestVersion = latest;
-      applyLang();
       cl.add('outdated');
     }
+    applyLang();
     cl.remove('checking');
   } catch (e) {
-    cl.remove('checking');
-    cl.add('check-failed');
+    if (!silent) {
+      cl.remove('checking');
+      cl.add('check-failed');
+    }
   }
 }
-$('retry').onclick = checkVersion;
+$('retry').onclick = () => checkVersion();
+setInterval(() => checkVersion(true), 5 * 60 * 1000);
 
 $('reset').onclick = () => { if (targetId) send({ type: 'reset', id: targetId }); };
 $('openSettings').onclick = () => document.body.classList.add('settings-open');
