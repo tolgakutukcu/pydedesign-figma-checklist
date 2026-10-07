@@ -76,7 +76,26 @@ function pushState() {
 figma.on('selectionchange', pushState);
 figma.on('currentpagechange', pushState);
 
+// UI language is a per-user preference, so it is kept in local clientStorage (not in the file).
+const LANG_KEY = 'pyde-handoff-lang';
+let lang = 'en';
+
 figma.ui.onmessage = async (msg) => {
+  if (msg.type === 'ready') {
+    const saved = await figma.clientStorage.getAsync(LANG_KEY);
+    if (saved === 'en' || saved === 'tr') lang = saved;
+    figma.ui.postMessage({ type: 'prefs', lang });
+    return pushState();
+  }
+
+  if (msg.type === 'setLang') {
+    if (msg.lang === 'en' || msg.lang === 'tr') {
+      lang = msg.lang;
+      await figma.clientStorage.setAsync(LANG_KEY, lang);
+    }
+    return;
+  }
+
   if (msg.type === 'refresh') return pushState();
 
   if (msg.type === 'toggle' || msg.type === 'reset') {
@@ -92,7 +111,7 @@ figma.ui.onmessage = async (msg) => {
       if (msg.type === 'toggle' && msg.value) done.push(msg.item);
       writeData(node, done);
     } catch (e) {
-      figma.notify('Could not save: ' + (e && e.message ? e.message : e), { error: true });
+      figma.notify((lang === 'tr' ? 'Kaydedilemedi: ' : 'Could not save: ') + (e && e.message ? e.message : e), { error: true });
     }
     pushState();
   }

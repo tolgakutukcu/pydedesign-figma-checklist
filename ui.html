@@ -16,9 +16,11 @@
     color: var(--figma-color-text); background: var(--figma-color-bg);
     -webkit-font-smoothing: antialiased;
   }
+  body.loading { visibility: hidden; } /* avoids a language flash before saved prefs arrive */
 
   header { flex: none; padding: 16px 16px 12px; }
   .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .right { flex: none; display: flex; align-items: center; gap: 6px; }
   .eyebrow {
     font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
     color: var(--accent); margin-bottom: 2px;
@@ -26,8 +28,16 @@
   .eyebrow small { font-size: 10px; letter-spacing: 0; text-transform: none; opacity: .7; font-weight: 500; }
   h1 { margin: 0; font-size: 15px; line-height: 1.25; font-weight: 700; letter-spacing: -.01em; }
 
+  .icon-btn {
+    flex: none; width: 24px; height: 24px; display: grid; place-items: center; padding: 0;
+    border: 0; border-radius: 7px; cursor: pointer; background: transparent;
+    color: var(--figma-color-text-secondary); transition: background .15s, color .15s;
+  }
+  .icon-btn:hover { background: var(--figma-color-bg-hover); color: var(--figma-color-text); }
+  .icon-btn svg { width: 16px; height: 16px; }
+
   .status {
-    flex: none; display: flex; align-items: center; gap: 5px; height: 24px;
+    display: flex; align-items: center; gap: 5px; height: 24px;
     padding: 0 10px 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
     background: var(--figma-color-bg-secondary); color: var(--figma-color-text-secondary);
     transition: background .25s, color .25s;
@@ -118,6 +128,28 @@
   #reset:hover { background: var(--figma-color-bg-hover); }
   body.empty footer { display: none; }
 
+  /* Settings screen */
+  .settings {
+    position: fixed; inset: 0; z-index: 5; display: none; flex-direction: column;
+    background: var(--figma-color-bg);
+  }
+  body.settings-open .settings { display: flex; }
+  .s-head { display: flex; align-items: center; gap: 8px; padding: 14px 16px; border-bottom: 1px solid var(--figma-color-border); }
+  .s-head h2 { margin: 0; font-size: 14px; letter-spacing: -.01em; }
+  .s-body { padding: 16px; display: flex; flex-direction: column; gap: 18px; }
+  .field .lbl { font-size: 11px; font-weight: 600; color: var(--figma-color-text-secondary); margin-bottom: 8px; }
+  .seg {
+    display: flex; padding: 3px; gap: 3px; border-radius: 10px;
+    background: var(--figma-color-bg-secondary); border: 1px solid var(--figma-color-border);
+  }
+  .seg button {
+    flex: 1; font: inherit; font-weight: 500; padding: 7px 0; border: 0; border-radius: 7px; cursor: pointer;
+    background: transparent; color: var(--figma-color-text-secondary); transition: all .15s;
+  }
+  .seg button:hover { color: var(--figma-color-text); }
+  .seg button.on { background: var(--accent); color: #fff; box-shadow: 0 1px 4px rgba(124,92,255,.4); }
+  .s-ver { color: var(--figma-color-text-tertiary); font-size: 11px; }
+
   /* Blocking screen shown when the installed version is outdated */
   .update {
     position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column;
@@ -141,16 +173,21 @@
   .update .how { margin-top: 10px; font-size: 11px; max-width: 250px; }
 </style>
 </head>
-<body class="empty">
+<body class="empty loading">
   <header>
     <div class="top">
       <div>
         <div class="eyebrow">Pyde Design <small id="ver"></small></div>
         <h1>Handoff Pre Checklist</h1>
       </div>
-      <div class="status">
-        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>
-        <span id="statusText"></span>
+      <div class="right">
+        <div class="status">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>
+          <span id="statusText"></span>
+        </div>
+        <button class="icon-btn" id="openSettings" data-i18n-title="settings">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M2 4.5h6M11.5 4.5H14M2 11.5h2.5M8 11.5h6"/><circle cx="9.75" cy="4.5" r="1.75"/><circle cx="6.25" cy="11.5" r="1.75"/></svg>
+        </button>
       </div>
     </div>
     <div class="target">
@@ -176,41 +213,108 @@
       <div class="count" id="count"></div>
       <div class="upd" id="upd"></div>
     </div>
-    <button id="reset">Reset</button>
+    <button id="reset" data-i18n="reset"></button>
   </footer>
+
+  <div class="settings">
+    <div class="s-head">
+      <button class="icon-btn" id="closeSettings" data-i18n-title="back">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"/></svg>
+      </button>
+      <h2 data-i18n="settings"></h2>
+    </div>
+    <div class="s-body">
+      <div class="field">
+        <div class="lbl" data-i18n="language"></div>
+        <div class="seg">
+          <button data-lang="en">English</button>
+          <button data-lang="tr">Türkçe</button>
+        </div>
+      </div>
+      <div class="s-ver" id="sVer"></div>
+    </div>
+  </div>
 
   <div class="update">
     <div class="big">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
     </div>
-    <h2>Update required</h2>
-    <p>A newer version of this plugin is available. Please download it to keep using the checklist.</p>
+    <h2 data-i18n="updTitle"></h2>
+    <p data-i18n="updText"></p>
     <p class="versions" id="versions"></p>
-    <a class="btn" id="download" href="https://github.com/tolgakutukcu/pydedesign-figma-checklist/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download from GitHub</a>
-    <p class="how">Then in Figma: Plugins → Development → Import plugin from manifest… and pick the new <code>manifest.json</code>.</p>
+    <a class="btn" id="download" href="https://github.com/tolgakutukcu/pydedesign-figma-checklist/archive/refs/heads/main.zip" target="_blank" rel="noopener" data-i18n="updDownload"></a>
+    <p class="how" data-i18n="updHow"></p>
   </div>
 
 <script>
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const VERSION_URL = 'https://raw.githubusercontent.com/tolgakutukcu/pydedesign-figma-checklist/main/version.json';
 
 // `id` is what gets stored in the file, so item text can be edited freely.
 // `legacy` is the old text key used before ids existed, kept so existing checks still show up.
 const ITEMS = [
-  { id: 'component-structure', text: 'Component structure preserved', legacy: 'Component yapısı korundu' },
-  { id: 'styles-variables', text: 'Colors, text and effects use styles / variables', legacy: 'Renk, text ve efektler style / variable ile kullanılmış' },
-  { id: 'clean-layers', text: 'Unnecessary and hidden layers removed', legacy: 'Gereksiz ve gizli layer’lar kaldırıldı' },
-  { id: 'ads', text: 'Ad placements added on screens with ads', legacy: 'Reklamlı ekranlarda reklam gösterimi eklendi' },
-  { id: 'no-extra-page', text: 'No extra page added for feature updates', legacy: 'Feature güncellemesi ise ekstra sayfa eklenmedi' },
-  { id: 'drafts', text: 'Drafts cleaned up', legacy: 'Draft’lar temizlendi' },
-  { id: 'notes', text: 'Necessary notes added', legacy: 'Gerekli notlar eklendi' },
-  { id: 'auto-layout', text: 'Auto layout / responsive design checked', legacy: 'Auto layout / responsive design kontrol edildi' },
-  { id: 'small-screen', text: 'Small screen check done', legacy: 'Küçük ekran kontrolü yapıldı' },
-  { id: 'naming', text: 'Root frame / section naming done', legacy: 'Root frame / section isimlendirmesi yapılmış' },
-  { id: 'long-text', text: 'Long text tested for other languages', legacy: 'Yabancı diller için uzun metin testi yapıldı' },
-  { id: 'states', text: 'Empty, loading and error states added', legacy: 'Empty, loading ve hata state’leri eklendi' },
-  { id: 'dark-mode', text: 'Dark mode / theme check done', legacy: 'Dark mode / tema kontrolü yapıldı' }
+  { id: 'component-structure', legacy: 'Component yapısı korundu',
+    en: 'Component structure preserved', tr: 'Component yapısı korundu' },
+  { id: 'styles-variables', legacy: 'Renk, text ve efektler style / variable ile kullanılmış',
+    en: 'Colors, text and effects use styles / variables', tr: 'Renk, text ve efektler style / variable ile kullanılmış' },
+  { id: 'clean-layers', legacy: 'Gereksiz ve gizli layer’lar kaldırıldı',
+    en: 'Unnecessary and hidden layers removed', tr: 'Gereksiz ve gizli layer’lar kaldırıldı' },
+  { id: 'ads', legacy: 'Reklamlı ekranlarda reklam gösterimi eklendi',
+    en: 'Ad placements added on screens with ads', tr: 'Reklamlı ekranlarda reklam gösterimi eklendi' },
+  { id: 'no-extra-page', legacy: 'Feature güncellemesi ise ekstra sayfa eklenmedi',
+    en: 'No extra page added for feature updates', tr: 'Feature güncellemesi ise ekstra sayfa eklenmedi' },
+  { id: 'drafts', legacy: 'Draft’lar temizlendi',
+    en: 'Drafts cleaned up', tr: 'Draft’lar temizlendi' },
+  { id: 'notes', legacy: 'Gerekli notlar eklendi',
+    en: 'Necessary notes added', tr: 'Gerekli notlar eklendi' },
+  { id: 'auto-layout', legacy: 'Auto layout / responsive design kontrol edildi',
+    en: 'Auto layout / responsive design checked', tr: 'Auto layout / responsive design kontrol edildi' },
+  { id: 'small-screen', legacy: 'Küçük ekran kontrolü yapıldı',
+    en: 'Small screen check done', tr: 'Küçük ekran kontrolü yapıldı' },
+  { id: 'naming', legacy: 'Root frame / section isimlendirmesi yapılmış',
+    en: 'Root frame / section naming done', tr: 'Root frame / section isimlendirmesi yapılmış' },
+  { id: 'long-text', legacy: 'Yabancı diller için uzun metin testi yapıldı',
+    en: 'Long text tested for other languages', tr: 'Yabancı diller için uzun metin testi yapıldı' },
+  { id: 'states', legacy: 'Empty, loading ve hata state’leri eklendi',
+    en: 'Empty, loading and error states added', tr: 'Empty, loading ve hata state’leri eklendi' },
+  { id: 'dark-mode', legacy: 'Dark mode / tema kontrolü yapıldı',
+    en: 'Dark mode / theme check done', tr: 'Dark mode / tema kontrolü yapıldı' }
 ];
+
+const STRINGS = {
+  en: {
+    reset: 'Reset', completed: 'Completed', settings: 'Settings', back: 'Back', language: 'Language', version: 'Version',
+    emptyTitle: 'Select a frame or section',
+    emptyText: 'The checklist is kept separately for each root frame, section, or frame inside a section. Selecting any element inside one works too.',
+    multiTitle: 'Select a single frame or section',
+    multiText: (n) => n + ' different frames / sections are selected. The checklist shows one at a time.',
+    inSection: (s) => 'in section “' + s + '”',
+    items: (n, total) => n + ' / ' + total + ' items',
+    lastUpdated: 'Last updated: ', nothingChecked: 'Nothing checked yet',
+    justNow: 'just now', minAgo: ' min ago', hAgo: ' h ago', dateLocale: 'en-US',
+    updTitle: 'Update required',
+    updText: 'A newer version of this plugin is available. Please download it to keep using the checklist.',
+    updDownload: 'Download from GitHub',
+    updHow: 'Then in Figma: Plugins → Development → Import plugin from manifest… and pick the new manifest.json.',
+    installed: 'Installed', latest: 'Latest'
+  },
+  tr: {
+    reset: 'Sıfırla', completed: 'Tamamlandı', settings: 'Ayarlar', back: 'Geri', language: 'Dil', version: 'Sürüm',
+    emptyTitle: 'Bir frame veya section seç',
+    emptyText: 'Checklist; root frame, section ya da section içindeki bir frame için ayrı tutulur. İçindeki herhangi bir eleman seçili olsa da olur.',
+    multiTitle: 'Tek bir frame veya section seç',
+    multiText: (n) => n + ' farklı frame / section seçili. Checklist aynı anda sadece birini gösterir.',
+    inSection: (s) => '“' + s + '” section’ında',
+    items: (n, total) => n + ' / ' + total + ' madde',
+    lastUpdated: 'Son güncelleme: ', nothingChecked: 'Henüz işaretlenmedi',
+    justNow: 'az önce', minAgo: ' dk önce', hAgo: ' sa önce', dateLocale: 'tr-TR',
+    updTitle: 'Güncelleme gerekli',
+    updText: 'Bu plugin’in daha yeni bir sürümü var. Checklist’i kullanmaya devam etmek için lütfen indir.',
+    updDownload: 'GitHub’dan indir',
+    updHow: 'Sonra Figma’da: Plugins → Development → Import plugin from manifest… yolunu izleyip yeni manifest.json’ı seç.',
+    installed: 'Yüklü', latest: 'Son'
+  }
+};
 
 const ICONS = {
   Frame: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M5.5 2v12M10.5 2v12M2 5.5h12M2 10.5h12"/></svg>',
@@ -220,7 +324,11 @@ const ICONS = {
 const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
 
 const $ = (id) => document.getElementById(id);
+let lang = 'en';
 let targetId = null;
+let lastState = { status: 'none' };
+let latestVersion = null;
+const t = () => STRINGS[lang];
 
 function send(m) { parent.postMessage({ pluginMessage: m }, '*'); }
 
@@ -228,7 +336,6 @@ function build() {
   ITEMS.forEach((item) => {
     const li = document.createElement('li');
     li.innerHTML = '<label><input type="checkbox"><span class="box">' + CHECK + '</span><span class="text"></span></label>';
-    li.querySelector('.text').textContent = item.text;
     li.querySelector('input').onchange = (e) => {
       const value = e.target.checked;
       li.classList.toggle('done', value); // instant feedback; real state arrives right after
@@ -239,12 +346,12 @@ function build() {
   });
 }
 
-function ago(t) {
-  const s = Math.max(0, (Date.now() - t) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.floor(s / 60) + ' min ago';
-  if (s < 86400) return Math.floor(s / 3600) + ' h ago';
-  return new Date(t).toLocaleDateString('en-US');
+function ago(ts) {
+  const s = Math.max(0, (Date.now() - ts) / 1000);
+  if (s < 60) return t().justNow;
+  if (s < 3600) return Math.floor(s / 60) + t().minAgo;
+  if (s < 86400) return Math.floor(s / 3600) + t().hAgo;
+  return new Date(ts).toLocaleDateString(t().dateLocale);
 }
 
 function showEmpty(title, text) {
@@ -257,20 +364,15 @@ function showEmpty(title, text) {
 }
 
 function render(m) {
-  if (m.status === 'none') {
-    return showEmpty('Select a frame or section',
-      'The checklist is kept separately for each root frame, section, or frame inside a section. Selecting any element inside one works too.');
-  }
-  if (m.status === 'multiple') {
-    return showEmpty('Select a single frame or section',
-      m.count + ' different frames / sections are selected. The checklist shows one at a time.');
-  }
+  lastState = m;
+  if (m.status === 'none') return showEmpty(t().emptyTitle, t().emptyText);
+  if (m.status === 'multiple') return showEmpty(t().multiTitle, t().multiText(m.count));
 
   document.body.classList.remove('empty');
   targetId = m.target.id;
   $('targetIco').innerHTML = ICONS[m.target.kind];
   $('targetName').textContent = m.target.name;
-  $('targetSub').textContent = m.target.kind + ' · ' + (m.target.section ? 'in section “' + m.target.section + '”' : m.target.page);
+  $('targetSub').textContent = m.target.kind + ' · ' + (m.target.section ? t().inSection(m.target.section) : m.target.page);
 
   const done = new Set(m.done);
   let n = 0;
@@ -282,10 +384,22 @@ function render(m) {
   });
   const total = ITEMS.length;
   $('bar').style.width = (n / total) * 100 + '%';
-  $('count').textContent = n + ' / ' + total + ' items';
-  $('upd').textContent = m.at ? 'Last updated: ' + (m.by ? m.by + ' · ' : '') + ago(m.at) : 'Nothing checked yet';
-  $('statusText').textContent = n === total ? 'Completed' : n + '/' + total;
+  $('count').textContent = t().items(n, total);
+  $('upd').textContent = m.at ? t().lastUpdated + (m.by ? m.by + ' · ' : '') + ago(m.at) : t().nothingChecked;
+  $('statusText').textContent = n === total ? t().completed : n + '/' + total;
   document.body.classList.toggle('all-done', n === total);
+}
+
+// Applies the current language to all static text, item labels and dynamic screens.
+function applyLang() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t()[el.dataset.i18n]; });
+  document.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t()[el.dataset.i18nTitle]; });
+  document.querySelectorAll('li').forEach((li) => { li.querySelector('.text').textContent = li._item[lang]; });
+  document.querySelectorAll('.seg button').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
+  $('sVer').textContent = t().version + ' ' + VERSION;
+  if (latestVersion) $('versions').textContent = t().installed + ': v' + VERSION + '  ·  ' + t().latest + ': v' + latestVersion;
+  render(lastState);
 }
 
 // Returns true if version a is older than b (e.g. '1.0.0' < '1.1.0').
@@ -307,23 +421,37 @@ async function checkVersion() {
     clearTimeout(timer);
     const latest = (await res.json()).version;
     if (latest && isOlder(VERSION, latest)) {
-      $('versions').textContent = 'Installed: v' + VERSION + '  ·  Latest: v' + latest;
+      latestVersion = latest;
+      applyLang();
       document.body.classList.add('outdated');
     }
   } catch (e) {}
 }
 
 $('reset').onclick = () => { if (targetId) send({ type: 'reset', id: targetId }); };
+$('openSettings').onclick = () => document.body.classList.add('settings-open');
+$('closeSettings').onclick = () => document.body.classList.remove('settings-open');
+document.querySelectorAll('.seg button').forEach((b) => {
+  b.onclick = () => { lang = b.dataset.lang; send({ type: 'setLang', lang }); applyLang(); };
+});
 
 onmessage = (e) => {
   const m = e.data.pluginMessage;
-  if (m && m.type === 'state') render(m);
+  if (!m) return;
+  if (m.type === 'prefs') {
+    lang = m.lang === 'tr' ? 'tr' : 'en';
+    applyLang();
+    document.body.classList.remove('loading');
+  } else if (m.type === 'state') {
+    render(m);
+  }
 };
 
 $('ver').textContent = 'v' + VERSION;
 build();
-showEmpty('Select a frame or section', '');
-send({ type: 'refresh' });
+applyLang();
+send({ type: 'ready' });
+setTimeout(() => document.body.classList.remove('loading'), 1000); // fallback if prefs never arrive
 checkVersion();
 
 // Light sync so changes made by other designers show up.
