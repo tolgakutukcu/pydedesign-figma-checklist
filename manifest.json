@@ -1,0 +1,14 @@
+{
+  "name": "Pyde Design Handoff Pre Checklist",
+  "id": "1000000000000000001",
+  "api": "1.0.0",
+  "main": "code.js",
+  "ui": "ui.html",
+  "editorType": ["figma"],
+  "documentAccess": "dynamic-page",
+  "permissions": ["currentuser"],
+  "networkAccess": {
+    "allowedDomains": ["https://raw.githubusercontent.com"],
+    "reasoning": "Checks the latest plugin version published on GitHub."
+  }
+}

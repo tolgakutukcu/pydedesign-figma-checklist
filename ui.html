@@ -1,0 +1,333 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  :root {
+    --green: #1bc47d;
+    --green-soft: rgba(27, 196, 125, .14);
+    --accent: #7c5cff;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; overflow: hidden; }
+  body {
+    display: flex; flex-direction: column;
+    font: 12px/1.45 Inter, system-ui, sans-serif;
+    color: var(--figma-color-text); background: var(--figma-color-bg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  header { flex: none; padding: 16px 16px 12px; }
+  .top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+  .eyebrow {
+    font-size: 10px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 2px;
+  }
+  .eyebrow small { font-size: 10px; letter-spacing: 0; text-transform: none; opacity: .7; font-weight: 500; }
+  h1 { margin: 0; font-size: 15px; line-height: 1.25; font-weight: 700; letter-spacing: -.01em; }
+
+  .status {
+    flex: none; display: flex; align-items: center; gap: 5px; height: 24px;
+    padding: 0 10px 0 8px; border-radius: 999px; font-size: 11px; font-weight: 600;
+    background: var(--figma-color-bg-secondary); color: var(--figma-color-text-secondary);
+    transition: background .25s, color .25s;
+  }
+  .status svg { width: 14px; height: 14px; display: none; }
+  body.all-done .status { background: var(--green); color: #fff; box-shadow: 0 2px 10px rgba(27,196,125,.4); }
+  body.all-done .status svg { display: block; animation: pop .35s ease-out; }
+  body.empty .status { display: none; }
+  @keyframes pop { 0% { transform: scale(.3); } 70% { transform: scale(1.25); } 100% { transform: scale(1); } }
+
+  .target {
+    display: flex; align-items: center; gap: 10px; margin-top: 14px;
+    padding: 9px 11px; border-radius: 10px;
+    background: var(--figma-color-bg-secondary);
+    border: 1px solid var(--figma-color-border);
+  }
+  .target .ico {
+    flex: none; width: 28px; height: 28px; border-radius: 8px; display: grid; place-items: center;
+    background: rgba(124, 92, 255, .14); color: var(--accent);
+  }
+  .target .ico svg { width: 16px; height: 16px; }
+  .target .meta { min-width: 0; }
+  .target .name { font-weight: 600; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .target .sub { color: var(--figma-color-text-secondary); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body.empty .target { display: none; }
+
+  .bar { height: 6px; margin-top: 12px; border-radius: 999px; background: var(--figma-color-bg-secondary); overflow: hidden; }
+  .bar i {
+    display: block; height: 100%; width: 0; border-radius: inherit;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    transition: width .3s ease;
+  }
+  body.empty .bar { display: none; }
+
+  ul { flex: 1; min-height: 0; overflow-y: auto; list-style: none; margin: 0; padding: 4px 12px 12px; }
+  body.empty ul { display: none; }
+  li { margin-bottom: 6px; }
+  label {
+    display: flex; align-items: flex-start; gap: 10px; cursor: pointer;
+    padding: 10px 12px; border-radius: 10px;
+    border: 1px solid var(--figma-color-border);
+    background: var(--figma-color-bg);
+    transition: border-color .15s, background .15s, transform .1s;
+  }
+  label:hover { background: var(--figma-color-bg-hover); border-color: var(--figma-color-border-strong); }
+  label:active { transform: scale(.995); }
+  input { position: absolute; opacity: 0; pointer-events: none; }
+
+  .box {
+    flex: none; width: 18px; height: 18px; margin-top: 1px; border-radius: 6px;
+    border: 1.5px solid var(--figma-color-border-strong);
+    display: grid; place-items: center; transition: all .15s;
+  }
+  .box svg { width: 12px; height: 12px; stroke: #fff; opacity: 0; transform: scale(.5); transition: all .15s; }
+  .text { flex: 1; transition: color .15s; }
+
+  li.done label { background: var(--green-soft); border-color: transparent; }
+  li.done .box { background: var(--green); border-color: var(--green); }
+  li.done .box svg { opacity: 1; transform: scale(1); }
+  li.done .text { color: var(--figma-color-text-secondary); }
+  input:focus-visible + .box { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .placeholder {
+    flex: 1; min-height: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 0 32px 32px; text-align: center;
+  }
+  body.empty .placeholder { display: flex; }
+  .placeholder .big {
+    width: 48px; height: 48px; border-radius: 14px; display: grid; place-items: center; margin-bottom: 6px;
+    background: rgba(124, 92, 255, .12); color: var(--accent);
+  }
+  .placeholder .big svg { width: 24px; height: 24px; }
+  .placeholder b { font-size: 13px; }
+  .placeholder span { color: var(--figma-color-text-secondary); }
+
+  footer {
+    flex: none; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px 16px; border-top: 1px solid var(--figma-color-border);
+  }
+  .info { min-width: 0; color: var(--figma-color-text-secondary); font-size: 11px; }
+  .info .count { font-variant-numeric: tabular-nums; color: var(--figma-color-text); font-weight: 500; }
+  .info .upd { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  #reset {
+    flex: none; font: inherit; font-weight: 500; cursor: pointer; padding: 6px 12px; border-radius: 8px;
+    border: 1px solid var(--figma-color-border); background: var(--figma-color-bg);
+    color: var(--figma-color-text); transition: background .15s;
+  }
+  #reset:hover { background: var(--figma-color-bg-hover); }
+  body.empty footer { display: none; }
+
+  /* Blocking screen shown when the installed version is outdated */
+  .update {
+    position: fixed; inset: 0; z-index: 10; display: none; flex-direction: column;
+    align-items: center; justify-content: center; gap: 8px; padding: 32px; text-align: center;
+    background: var(--figma-color-bg);
+  }
+  body.outdated .update { display: flex; }
+  .update .big {
+    width: 56px; height: 56px; border-radius: 16px; display: grid; place-items: center; margin-bottom: 8px;
+    background: rgba(124, 92, 255, .14); color: var(--accent);
+  }
+  .update .big svg { width: 28px; height: 28px; }
+  .update h2 { margin: 0; font-size: 15px; letter-spacing: -.01em; }
+  .update p { margin: 0; color: var(--figma-color-text-secondary); }
+  .update .versions { font-variant-numeric: tabular-nums; font-size: 11px; margin-top: 2px; }
+  .update a.btn {
+    margin-top: 14px; padding: 9px 16px; border-radius: 9px; font-weight: 600; font-size: 12px;
+    background: var(--accent); color: #fff; text-decoration: none;
+  }
+  .update a.btn:hover { filter: brightness(1.08); }
+  .update .how { margin-top: 10px; font-size: 11px; max-width: 250px; }
+</style>
+</head>
+<body class="empty">
+  <header>
+    <div class="top">
+      <div>
+        <div class="eyebrow">Pyde Design <small id="ver"></small></div>
+        <h1>Handoff Pre Checklist</h1>
+      </div>
+      <div class="status">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>
+        <span id="statusText"></span>
+      </div>
+    </div>
+    <div class="target">
+      <div class="ico" id="targetIco"></div>
+      <div class="meta">
+        <div class="name" id="targetName"></div>
+        <div class="sub" id="targetSub"></div>
+      </div>
+    </div>
+    <div class="bar"><i id="bar"></i></div>
+  </header>
+
+  <ul id="list"></ul>
+
+  <div class="placeholder">
+    <div class="big" id="phIco"></div>
+    <b id="phTitle"></b>
+    <span id="phText"></span>
+  </div>
+
+  <footer>
+    <div class="info">
+      <div class="count" id="count"></div>
+      <div class="upd" id="upd"></div>
+    </div>
+    <button id="reset">Reset</button>
+  </footer>
+
+  <div class="update">
+    <div class="big">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></svg>
+    </div>
+    <h2>Update required</h2>
+    <p>A newer version of this plugin is available. Please download it to keep using the checklist.</p>
+    <p class="versions" id="versions"></p>
+    <a class="btn" id="download" href="https://github.com/tolgakutukcu/pydedesign-figma-checklist/archive/refs/heads/main.zip" target="_blank" rel="noopener">Download from GitHub</a>
+    <p class="how">Then in Figma: Plugins → Development → Import plugin from manifest… and pick the new <code>manifest.json</code>.</p>
+  </div>
+
+<script>
+const VERSION = '1.0.0';
+const VERSION_URL = 'https://raw.githubusercontent.com/tolgakutukcu/pydedesign-figma-checklist/main/version.json';
+
+// `id` is what gets stored in the file, so item text can be edited freely.
+// `legacy` is the old text key used before ids existed, kept so existing checks still show up.
+const ITEMS = [
+  { id: 'component-structure', text: 'Component structure preserved', legacy: 'Component yapısı korundu' },
+  { id: 'styles-variables', text: 'Colors, text and effects use styles / variables', legacy: 'Renk, text ve efektler style / variable ile kullanılmış' },
+  { id: 'clean-layers', text: 'Unnecessary and hidden layers removed', legacy: 'Gereksiz ve gizli layer’lar kaldırıldı' },
+  { id: 'ads', text: 'Ad placements added on screens with ads', legacy: 'Reklamlı ekranlarda reklam gösterimi eklendi' },
+  { id: 'no-extra-page', text: 'No extra page added for feature updates', legacy: 'Feature güncellemesi ise ekstra sayfa eklenmedi' },
+  { id: 'drafts', text: 'Drafts cleaned up', legacy: 'Draft’lar temizlendi' },
+  { id: 'notes', text: 'Necessary notes added', legacy: 'Gerekli notlar eklendi' },
+  { id: 'auto-layout', text: 'Auto layout / responsive design checked', legacy: 'Auto layout / responsive design kontrol edildi' },
+  { id: 'small-screen', text: 'Small screen check done', legacy: 'Küçük ekran kontrolü yapıldı' },
+  { id: 'naming', text: 'Root frame / section naming done', legacy: 'Root frame / section isimlendirmesi yapılmış' },
+  { id: 'long-text', text: 'Long text tested for other languages', legacy: 'Yabancı diller için uzun metin testi yapıldı' },
+  { id: 'states', text: 'Empty, loading and error states added', legacy: 'Empty, loading ve hata state’leri eklendi' },
+  { id: 'dark-mode', text: 'Dark mode / theme check done', legacy: 'Dark mode / tema kontrolü yapıldı' }
+];
+
+const ICONS = {
+  Frame: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><path d="M5.5 2v12M10.5 2v12M2 5.5h12M2 10.5h12"/></svg>',
+  Section: '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><path d="M2 5.5V4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1v1.5M2 5.5h12V12a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5.5z"/></svg>',
+  Pointer: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M5 3l14 7-6 2-2 6L5 3z"/></svg>'
+};
+const CHECK = '<svg viewBox="0 0 16 16" fill="none" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+
+const $ = (id) => document.getElementById(id);
+let targetId = null;
+
+function send(m) { parent.postMessage({ pluginMessage: m }, '*'); }
+
+function build() {
+  ITEMS.forEach((item) => {
+    const li = document.createElement('li');
+    li.innerHTML = '<label><input type="checkbox"><span class="box">' + CHECK + '</span><span class="text"></span></label>';
+    li.querySelector('.text').textContent = item.text;
+    li.querySelector('input').onchange = (e) => {
+      const value = e.target.checked;
+      li.classList.toggle('done', value); // instant feedback; real state arrives right after
+      send({ type: 'toggle', id: targetId, item: item.id, legacy: item.legacy, value });
+    };
+    li._item = item;
+    $('list').append(li);
+  });
+}
+
+function ago(t) {
+  const s = Math.max(0, (Date.now() - t) / 1000);
+  if (s < 60) return 'just now';
+  if (s < 3600) return Math.floor(s / 60) + ' min ago';
+  if (s < 86400) return Math.floor(s / 3600) + ' h ago';
+  return new Date(t).toLocaleDateString('en-US');
+}
+
+function showEmpty(title, text) {
+  targetId = null;
+  document.body.classList.add('empty');
+  document.body.classList.remove('all-done');
+  $('phIco').innerHTML = ICONS.Pointer;
+  $('phTitle').textContent = title;
+  $('phText').textContent = text;
+}
+
+function render(m) {
+  if (m.status === 'none') {
+    return showEmpty('Select a frame or section',
+      'The checklist is kept separately for each root frame, section, or frame inside a section. Selecting any element inside one works too.');
+  }
+  if (m.status === 'multiple') {
+    return showEmpty('Select a single frame or section',
+      m.count + ' different frames / sections are selected. The checklist shows one at a time.');
+  }
+
+  document.body.classList.remove('empty');
+  targetId = m.target.id;
+  $('targetIco').innerHTML = ICONS[m.target.kind];
+  $('targetName').textContent = m.target.name;
+  $('targetSub').textContent = m.target.kind + ' · ' + (m.target.section ? 'in section “' + m.target.section + '”' : m.target.page);
+
+  const done = new Set(m.done);
+  let n = 0;
+  document.querySelectorAll('li').forEach((li) => {
+    const on = done.has(li._item.id) || done.has(li._item.legacy);
+    li.classList.toggle('done', on);
+    li.querySelector('input').checked = on;
+    if (on) n++;
+  });
+  const total = ITEMS.length;
+  $('bar').style.width = (n / total) * 100 + '%';
+  $('count').textContent = n + ' / ' + total + ' items';
+  $('upd').textContent = m.at ? 'Last updated: ' + (m.by ? m.by + ' · ' : '') + ago(m.at) : 'Nothing checked yet';
+  $('statusText').textContent = n === total ? 'Completed' : n + '/' + total;
+  document.body.classList.toggle('all-done', n === total);
+}
+
+// Returns true if version a is older than b (e.g. '1.0.0' < '1.1.0').
+function isOlder(a, b) {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) {
+    const x = pa[i] || 0, y = pb[i] || 0;
+    if (x !== y) return x < y;
+  }
+  return false;
+}
+
+// If GitHub can't be reached (offline etc.) the plugin keeps working normally.
+async function checkVersion() {
+  try {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 5000);
+    const res = await fetch(VERSION_URL + '?t=' + Date.now(), { signal: ctrl.signal, cache: 'no-store' });
+    clearTimeout(timer);
+    const latest = (await res.json()).version;
+    if (latest && isOlder(VERSION, latest)) {
+      $('versions').textContent = 'Installed: v' + VERSION + '  ·  Latest: v' + latest;
+      document.body.classList.add('outdated');
+    }
+  } catch (e) {}
+}
+
+$('reset').onclick = () => { if (targetId) send({ type: 'reset', id: targetId }); };
+
+onmessage = (e) => {
+  const m = e.data.pluginMessage;
+  if (m && m.type === 'state') render(m);
+};
+
+$('ver').textContent = 'v' + VERSION;
+build();
+showEmpty('Select a frame or section', '');
+send({ type: 'refresh' });
+checkVersion();
+
+// Light sync so changes made by other designers show up.
+setInterval(() => send({ type: 'refresh' }), 3000);
+</script>
+</body>
+</html>
